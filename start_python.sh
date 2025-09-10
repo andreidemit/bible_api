@@ -13,7 +13,10 @@ PYTHON_CMD=""
 for cmd in python3.12 python3 python; do
     if command -v "$cmd" >/dev/null 2>&1; then
         version=$($cmd --version 2>&1 | grep -oE '[0-9]+\.[0-9]+' | head -1)
-        if [[ $(echo "$version >= 3.8" | bc -l) -eq 1 ]]; then
+        # Simple version check for Python 3.8+
+        major=$(echo "$version" | cut -d. -f1)
+        minor=$(echo "$version" | cut -d. -f2)
+        if [[ $major -gt 3 ]] || [[ $major -eq 3 && $minor -ge 8 ]]; then
             PYTHON_CMD="$cmd"
             echo "✓ Found Python $version at $(command -v $cmd)"
             break

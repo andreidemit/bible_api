@@ -45,7 +45,11 @@ class BibleImporter:
     """Bible data importer for OSIS XML files"""
     
     def __init__(self, database_url: str):
-        self.engine = create_engine(database_url, encoding='utf8mb4')
+        # Add charset to URL instead of using deprecated encoding parameter
+        if 'charset' not in database_url:
+            connector = '&' if '?' in database_url else '?'
+            database_url += f'{connector}charset=utf8mb4'
+        self.engine = create_engine(database_url)
         self.SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=self.engine)
         
     def create_tables(self, drop_first: bool = False):

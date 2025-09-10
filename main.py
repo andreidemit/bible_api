@@ -42,7 +42,11 @@ app.add_middleware(
 DATABASE_URL = os.getenv('DATABASE_URL', '')
 if DATABASE_URL:
     DATABASE_URL = DATABASE_URL.replace('mysql://', 'mysql+pymysql://')
-    engine = create_engine(DATABASE_URL, encoding='utf8mb4', pool_size=10)
+    # Add charset to URL instead of using deprecated encoding parameter
+    if 'charset' not in DATABASE_URL:
+        connector = '&' if '?' in DATABASE_URL else '?'
+        DATABASE_URL += f'{connector}charset=utf8mb4'
+    engine = create_engine(DATABASE_URL, pool_size=10)
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 else:
     # For testing without database
