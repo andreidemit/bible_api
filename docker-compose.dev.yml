@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  bible-api-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        CONFIGURATION: Debug
+    image: bible-api:dev
+    container_name: bible-api-dev
+    ports:
+      - "8000:8000"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8000
+      - AppSettings__AzureStorageConnectionString=${AZURE_STORAGE_CONNECTION_STRING:-}
+      - AppSettings__AzureContainerName=${AZURE_CONTAINER_NAME:-bible-translations}
+      - AppSettings__BaseUrl=http://localhost:8000
+      - AppSettings__AllowedOrigins__0=*
+    volumes:
+      # Mount source code for hot reload (if using dotnet watch)
+      - .:/src:ro
+      - /src/BibleApi/bin
+      - /src/BibleApi/obj
+      # Development configuration
+      - ./BibleApi/appsettings.Development.json:/app/appsettings.Development.json:ro
+    restart: unless-stopped
+    networks:
+      - bible-api-dev-network
+    # Enable debugging
+    stdin_open: true
+    tty: true
+
+  # Optional: Development database for testing
+  sql-server:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: bible-api-db-dev
+    profiles:
+      - "database"
+    ports:
+      - "1433:1433"
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=${SQL_SERVER_PASSWORD:-StrongPassword123!}
+      - MSSQL_PID=Developer
+    volumes:
+      - bible-api-db-data:/var/opt/mssql/data
+      - ./sql:/docker-entrypoint-initdb.d:ro
+    restart: unless-stopped
+    networks:
+      - bible-api-dev-network
+
+networks:
+  bible-api-dev-network:
+    driver: bridge
+
+volumes:
+  bible-api-db-data:
+    driver: local

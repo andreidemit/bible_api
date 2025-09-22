@@ -1,4 +1,57 @@
-# Deprecated docker-compose file from Python version intentionally left blank.
-# Use Dockerfile (ASP.NET Core) to build and run container.
-version: "3.8"
-services: {}
+version: '3.8'
+
+services:
+  bible-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        CONFIGURATION: Release
+    image: bible-api:latest
+    container_name: bible-api
+    ports:
+      - "8000:8000"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - AppSettings__AzureStorageConnectionString=${AZURE_STORAGE_CONNECTION_STRING}
+      - AppSettings__AzureContainerName=${AZURE_CONTAINER_NAME:-bible-translations}
+      - AppSettings__BaseUrl=${BASE_URL:-http://localhost:8000}
+      - AppSettings__AllowedOrigins__0=${ALLOWED_ORIGINS:-*}
+    volumes:
+      # Optional: Mount configuration files
+      - ./appsettings.Production.json:/app/appsettings.Production.json:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    networks:
+      - bible-api-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.bible-api.rule=Host(`${API_DOMAIN:-api.localhost}`)"
+      - "traefik.http.services.bible-api.loadbalancer.server.port=8000"
+
+  # Optional: Reverse proxy for production
+  traefik:
+    image: traefik:v3.0
+    container_name: bible-api-proxy
+    profiles:
+      - "proxy"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"  # Traefik dashboard
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik:/etc/traefik:ro
+      - ./certs:/certs:ro
+    networks:
+      - bible-api-network
+    restart: unless-stopped
+
+networks:
+  bible-api-network:
+    driver: bridge
