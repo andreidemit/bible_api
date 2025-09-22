@@ -7,6 +7,8 @@ using BibleApi.Configuration;
 using BibleApi.Core;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Caching.Memory;
+using System.Collections.Concurrent;
 
 namespace BibleApi.Services
 {
@@ -19,16 +21,35 @@ namespace BibleApi.Services
         private readonly BlobContainerClient _containerClient;
         private readonly AppSettings _settings;
         private readonly ILogger<AzureXmlBibleService> _logger;
+        private readonly IMemoryCache _memoryCache;
 
-        // Cache for parsed XML data to avoid re-parsing
-        private readonly Dictionary<string, string> _xmlCache = new();
-        private readonly Dictionary<string, Translation> _translationCache = new();
-        private List<Translation>? _availableTranslations;
+        // Cache keys
+        private const string TranslationsCacheKey = "all_translations";
+        private const string TranslationCacheKeyPrefix = "translation_";
+        private const string XmlContentCacheKeyPrefix = "xml_content_";
+        
+        // Cache options
+        private static readonly MemoryCacheEntryOptions TranslationCacheOptions = new()
+        {
+            SlidingExpiration = TimeSpan.FromHours(24),
+            AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(7),
+            Size = 1,
+            Priority = CacheItemPriority.High
+        };
+        
+        private static readonly MemoryCacheEntryOptions XmlContentCacheOptions = new()
+        {
+            SlidingExpiration = TimeSpan.FromHours(2),
+            AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24),
+            Size = 10, // XML content is larger
+            Priority = CacheItemPriority.Normal
+        };
 
-        public AzureXmlBibleService(IOptions<AppSettings> settings, ILogger<AzureXmlBibleService> logger)
+        public AzureXmlBibleService(IOptions<AppSettings> settings, ILogger<AzureXmlBibleService> logger, IMemoryCache memoryCache)
         {
             _settings = settings.Value;
             _logger = logger;
+            _memoryCache = memoryCache;
 
             if (string.IsNullOrEmpty(_settings.AzureStorageConnectionString))
             {
@@ -37,7 +58,17 @@ namespace BibleApi.Services
 
             try
             {
-                _blobServiceClient = new BlobServiceClient(_settings.AzureStorageConnectionString);
+                var blobClientOptions = new BlobClientOptions()
+                {
+                    Retry = {
+                        Mode = RetryMode.Exponential,
+                        MaxRetries = 3,
+                        Delay = TimeSpan.FromSeconds(1),
+                        MaxDelay = TimeSpan.FromSeconds(10)
+                    }
+                };
+                
+                _blobServiceClient = new BlobServiceClient(_settings.AzureStorageConnectionString, blobClientOptions);
                 _containerClient = _blobServiceClient.GetBlobContainerClient(_settings.AzureContainerName);
             }
             catch (Exception ex)
@@ -51,7 +82,9 @@ namespace BibleApi.Services
         /// </summary>
         private async Task<string?> GetXmlContentAsync(string filePath)
         {
-            if (_xmlCache.TryGetValue(filePath, out string? cached))
+            var cacheKey = XmlContentCacheKeyPrefix + filePath;
+            
+            if (_memoryCache.TryGetValue(cacheKey, out string? cached))
             {
                 return cached;
             }
@@ -61,7 +94,8 @@ namespace BibleApi.Services
                 var blobClient = _containerClient.GetBlobClient(filePath);
                 var response = await blobClient.DownloadContentAsync();
                 var content = response.Value.Content.ToString();
-                _xmlCache[filePath] = content;
+                
+                _memoryCache.Set(cacheKey, content, XmlContentCacheOptions);
                 return content;
             }
             catch (Azure.RequestFailedException ex) when (ex.Status == 404)
@@ -159,15 +193,18 @@ namespace BibleApi.Services
         /// </summary>
         public async Task<List<Translation>> ListTranslationsAsync()
         {
-            if (_availableTranslations != null)
+            if (_memoryCache.TryGetValue(TranslationsCacheKey, out List<Translation>? cachedTranslations) && cachedTranslations != null)
             {
-                return _availableTranslations;
+                return cachedTranslations;
             }
 
             var translations = new List<Translation>();
 
             try
             {
+                // Use concurrent operations for better performance
+                var translationTasks = new List<Task<Translation?>>();
+                
                 await foreach (var blob in _containerClient.GetBlobsAsync())
                 {
                     if (blob.Name.EndsWith(".xml", StringComparison.OrdinalIgnoreCase))
@@ -178,27 +215,59 @@ namespace BibleApi.Services
                             : blob.Name;
                         
                         var identifier = Path.GetFileNameWithoutExtension(filename).ToLower();
-
-                        // Get translation info by parsing XML
-                        var xmlContent = await GetXmlContentAsync(blob.Name);
-                        if (!string.IsNullOrEmpty(xmlContent))
-                        {
-                            var translation = ParseXmlForTranslationInfo(xmlContent, identifier);
-                            translations.Add(translation);
-
-                            // Cache the translation info with file path
-                            _translationCache[identifier] = translation;
-                        }
+                        
+                        // Process translations concurrently but limit concurrency
+                        translationTasks.Add(GetTranslationFromBlobAsync(blob.Name, identifier));
                     }
                 }
 
-                _availableTranslations = translations;
+                // Process in batches to avoid overwhelming the system
+                const int batchSize = 5;
+                for (int i = 0; i < translationTasks.Count; i += batchSize)
+                {
+                    var batch = translationTasks.Skip(i).Take(batchSize);
+                    var batchResults = await Task.WhenAll(batch);
+                    
+                    foreach (var translation in batchResults.Where(t => t != null))
+                    {
+                        translations.Add(translation!);
+                    }
+                }
+
+                _memoryCache.Set(TranslationsCacheKey, translations, TranslationCacheOptions);
                 return translations;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error listing translations");
                 return new List<Translation>();
+            }
+        }
+        
+        /// <summary>
+        /// Helper method to get translation from blob asynchronously
+        /// </summary>
+        private async Task<Translation?> GetTranslationFromBlobAsync(string blobName, string identifier)
+        {
+            try
+            {
+                var xmlContent = await GetXmlContentAsync(blobName);
+                if (!string.IsNullOrEmpty(xmlContent))
+                {
+                    var translation = ParseXmlForTranslationInfo(xmlContent, identifier);
+                    
+                    // Cache individual translation
+                    var cacheKey = TranslationCacheKeyPrefix + identifier;
+                    _memoryCache.Set(cacheKey, translation, TranslationCacheOptions);
+                    
+                    return translation;
+                }
+                return null;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to process translation from blob {BlobName}", blobName);
+                return null;
             }
         }
 
@@ -208,8 +277,9 @@ namespace BibleApi.Services
         public async Task<Translation?> GetTranslationInfoAsync(string identifier)
         {
             var normalizedId = identifier.ToLower();
+            var cacheKey = TranslationCacheKeyPrefix + normalizedId;
 
-            if (_translationCache.TryGetValue(normalizedId, out Translation? cached))
+            if (_memoryCache.TryGetValue(cacheKey, out Translation? cached))
             {
                 return cached;
             }
