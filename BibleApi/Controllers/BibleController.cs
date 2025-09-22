@@ -287,6 +287,107 @@ namespace BibleApi.Controllers
         }
 
         /// <summary>
+        /// Search for verses containing specific text
+        /// GET /v1/search/{translation_id}?q={query}&books={book_list}
+        /// </summary>
+        [HttpGet("search/{translationId}")]
+        [ProducesResponseType(typeof(SearchResponse), 200)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(404)]
+        public async Task<ActionResult<SearchResponse>> SearchVerses(
+            string translationId,
+            [FromQuery] string q,
+            [FromQuery] string? books = null,
+            [FromQuery] int limit = 25)
+        {
+            try
+            {
+                // Input validation
+                if (string.IsNullOrWhiteSpace(q))
+                {
+                    return BadRequest(new { error = "Search query 'q' is required" });
+                }
+
+                if (q.Length < 3)
+                {
+                    return BadRequest(new { error = "Search query must be at least 3 characters" });
+                }
+
+                if (limit <= 0 || limit > 100)
+                {
+                    return BadRequest(new { error = "Limit must be between 1 and 100" });
+                }
+
+                var translation = await GetTranslationAsync(translationId);
+                
+                // Parse book list or default to all books
+                string[] searchBooks;
+                if (!string.IsNullOrWhiteSpace(books))
+                {
+                    var bookList = books.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                                      .Select(b => BookMetadata.Normalize(b.Trim()))
+                                      .Where(b => BookMetadata.IsValid(b))
+                                      .ToArray();
+                    
+                    if (!bookList.Any())
+                    {
+                        return BadRequest(new { error = "No valid books specified" });
+                    }
+                    
+                    searchBooks = bookList;
+                }
+                else
+                {
+                    searchBooks = BibleConstants.ProtestantBooks;
+                }
+
+                // Simple text search implementation (mock for now)
+                var searchResults = new List<Verse>();
+                var queryLower = q.ToLower();
+                
+                // Search through sample verses from first few chapters of each book
+                foreach (var book in searchBooks.Take(5)) // Limit books for demo
+                {
+                    for (int chapter = 1; chapter <= Math.Min(BookMetadata.GetChapterCount(book), 3); chapter++)
+                    {
+                        var verses = await _azureService.GetVersesByReferenceAsync(translationId, book, chapter, 1, 5);
+                        
+                        var matchingVerses = verses.Where(v => 
+                            v.Text.ToLower().Contains(queryLower))
+                            .Take(limit - searchResults.Count);
+                        
+                        searchResults.AddRange(matchingVerses);
+                        
+                        if (searchResults.Count >= limit)
+                            break;
+                    }
+                    
+                    if (searchResults.Count >= limit)
+                        break;
+                }
+
+                var response = new SearchResponse
+                {
+                    Translation = translation,
+                    Query = q,
+                    TotalResults = searchResults.Count,
+                    Results = searchResults.Take(limit).ToList()
+                };
+
+                return Ok(response);
+            }
+            catch (KeyNotFoundException)
+            {
+                return NotFound(new { error = "translation not found" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error searching verses for {TranslationId} with query '{Query}'", translationId, q);
+                return StatusCode(500, new { error = "Error performing search" });
+            }
+        }
+
+        /// <summary>
         /// Helper method to get human-readable book names
         /// </summary>
         // Removed duplicated GetBookName; now using BookMetadata.GetName
