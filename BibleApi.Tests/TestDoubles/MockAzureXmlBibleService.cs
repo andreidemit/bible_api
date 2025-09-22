@@ -1,6 +1,7 @@
 using BibleApi.Models;
 using BibleApi.Services;
 using BibleApi.Core;
+using BibleApi.Validation;
 
 namespace BibleApi.Tests.TestDoubles;
 
@@ -21,8 +22,13 @@ public class MockAzureXmlBibleService : IAzureXmlBibleService
 
     public Task<List<Verse>> GetVersesByReferenceAsync(string translationId, string book, int chapter, int? verseStart = null, int? verseEnd = null)
     {
+        // Add validation like the real service
+        BibleValidationHelper.ValidateTranslationId(translationId);
+        var normalized = BibleValidationHelper.ValidateAndNormalizeBookId(book);
+        BibleValidationHelper.ValidateChapter(normalized, chapter);
+        BibleValidationHelper.ValidateVerseRange(verseStart, verseEnd);
+
         var verses = new List<Verse>();
-        var normalized = BookMetadata.Normalize(book);
         var name = BookMetadata.GetName(normalized);
         int start = verseStart ?? 1;
         int end = verseEnd ?? Math.Min(start + 3, 10);
@@ -42,7 +48,10 @@ public class MockAzureXmlBibleService : IAzureXmlBibleService
 
     public Task<List<BookChapter>> GetChaptersForBookAsync(string translationId, string bookId)
     {
-        var normalized = BookMetadata.Normalize(bookId);
+        // Add validation like the real service
+        BibleValidationHelper.ValidateTranslationId(translationId);
+        var normalized = BibleValidationHelper.ValidateAndNormalizeBookId(bookId);
+
         var name = BookMetadata.GetName(normalized);
         var list = new List<BookChapter>();
         var count = Math.Min(BookMetadata.GetChapterCount(normalized), 5);
@@ -55,13 +64,15 @@ public class MockAzureXmlBibleService : IAzureXmlBibleService
 
     public Task<Verse?> GetRandomVerseAsync(string translationId, string[] books)
     {
-        if (books.Length == 0) return Task.FromResult<Verse?>(null);
+        // Add validation like the real service
+        BibleValidationHelper.ValidateTranslationId(translationId);
+        var normalizedBooks = BibleValidationHelper.ValidateAndNormalizeBookIds(books);
+
         var r = new Random();
-        var pick = books[r.Next(books.Length)];
-        var code = BookMetadata.Normalize(pick);
-        var name = BookMetadata.GetName(code);
+        var pick = normalizedBooks[r.Next(normalizedBooks.Length)];
+        var name = BookMetadata.GetName(pick);
         var chapter = 1;
         var verse = 1;
-        return Task.FromResult<Verse?>(new Verse { BookId = code, Book = name, Chapter = chapter, VerseNumber = verse, Text = $"Random {name} 1:1" });
+        return Task.FromResult<Verse?>(new Verse { BookId = pick, Book = name, Chapter = chapter, VerseNumber = verse, Text = $"Random {name} 1:1" });
     }
 }
