@@ -57,6 +57,7 @@ namespace BibleApi.Controllers
         /// </summary>
         [HttpGet("data")]
         [ProducesResponseType(typeof(TranslationsResponse), 200)]
+        [ResponseCache(Duration = 300, Location = ResponseCacheLocation.Any, VaryByHeader = "Accept")]
         public async Task<ActionResult<TranslationsResponse>> ListTranslations()
         {
             try
@@ -90,6 +91,7 @@ namespace BibleApi.Controllers
         [HttpGet("data/{translationId}")]
         [ProducesResponseType(typeof(BooksResponse), 200)]
         [ProducesResponseType(404)]
+        [ResponseCache(Duration = 3600, Location = ResponseCacheLocation.Any, VaryByHeader = "Accept")]
         public async Task<ActionResult<BooksResponse>> GetTranslationBooks(string translationId)
         {
             try
@@ -129,6 +131,7 @@ namespace BibleApi.Controllers
         [HttpGet("data/{translationId}/{bookId}")]
         [ProducesResponseType(typeof(ChaptersResponse), 200)]
         [ProducesResponseType(404)]
+        [ResponseCache(Duration = 3600, Location = ResponseCacheLocation.Any, VaryByHeader = "Accept")]
         public async Task<ActionResult<ChaptersResponse>> GetBookChapters(string translationId, string bookId)
         {
             try
@@ -172,6 +175,7 @@ namespace BibleApi.Controllers
         [HttpGet("data/{translationId}/{bookId}/{chapter:int}")]
         [ProducesResponseType(typeof(VersesInChapterResponse), 200)]
         [ProducesResponseType(404)]
+        [ResponseCache(Duration = 7200, Location = ResponseCacheLocation.Any, VaryByHeader = "Accept")]
         public async Task<ActionResult<VersesInChapterResponse>> GetChapterVerses(string translationId, string bookId, int chapter)
         {
             try
