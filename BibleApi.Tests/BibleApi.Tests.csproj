@@ -24,6 +24,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\BibleApi\BibleApi.csproj" />
+    <ProjectReference Include="..\BibleApi.Core\BibleApi.Core.csproj" />
   </ItemGroup>
 
 </Project>

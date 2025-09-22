@@ -430,6 +430,11 @@
           "System.Threading.Tasks": "4.3.0"
         }
       },
+      "System.ComponentModel.Annotations": {
+        "type": "Transitive",
+        "resolved": "5.0.0",
+        "contentHash": "dMkqfy2el8A8/I76n2Hi1oBFEbG1SfxD2l5nhwXV3XjlnOmwxJlQbYpJH4W51odnU9sARCSAgv7S3CyAFMkpYg=="
+      },
       "System.Console": {
         "type": "Transitive",
         "resolved": "4.3.0",
@@ -1174,8 +1179,15 @@
         "dependencies": {
           "Azure.Identity": "[1.16.0, )",
           "Azure.Storage.Blobs": "[12.25.0, )",
+          "BibleApi.Core": "[1.0.0, )",
           "Microsoft.AspNetCore.OpenApi": "[8.0.19, )",
           "Swashbuckle.AspNetCore": "[6.6.2, )"
+        }
+      },
+      "bibleapi.core": {
+        "type": "Project",
+        "dependencies": {
+          "System.ComponentModel.Annotations": "[5.0.0, )"
         }
       }
     }
