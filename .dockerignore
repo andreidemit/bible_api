@@ -1,41 +1,70 @@
-# Python
-__pycache__/
-*.py[cod]
-*.pyo
-*.pyd
-*.pytest_cache
-.mypy_cache
-.pytype
-.coverage*
-htmlcov/
+# .NET build artifacts
+bin/
+obj/
+out/
+*.dll
+*.exe
+*.pdb
+*.log
 
-# Virtual environments
-venv/
-.env
-.env.*
-!.env.example
+# .NET packages
+*.nupkg
+*.snupkg
+packages/
+!packages/build/
 
-# Git
-.git
-.gitignore
+# Visual Studio / IDEs
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.userprefs
+*.sln.docstates
 
-# Editor / OS
-.vscode
-.idea
+# OS generated files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 
-# Logs & temp
-*.log
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Testing
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+
+# Temporary files
 *.tmp
+*.temp
 *.swp
+*.swo
+*~
 
-# Tests / artifacts
-.tox
-build/
-dist/
-site/
-reports/
+# Environment files
+.env
+.env.local
+.env.production
+!.env.example
 
-# Docker
-Dockerfile.*
+# Documentation
+*.md
+!README.md
+!docs/
+
+# Deployment
+docker-compose.override.yml
+docker-compose.local.yml
+
+# Build context optimization
+.github/
+.dockerignore
+Dockerfile*

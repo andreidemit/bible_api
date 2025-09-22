@@ -15,6 +15,36 @@ This repository contains a C# .NET Core Web API implementation of a Bible verses
 
 ### Using Docker
 
+Build and run the application in a container:
+
+```bash
+# Build the Docker image
+docker build -t bible-api:latest .
+
+# Run with Docker
+docker run -p 8000:8000 \
+  -e AppSettings__AzureStorageConnectionString="your-connection-string" \
+  bible-api:latest
+
+# Or use Docker Compose for development
+docker-compose -f docker-compose.dev.yml up
+
+# For production deployment
+docker-compose up -d
+```
+
+### Quick Setup Script
+
+Use the development setup script for automated environment configuration:
+
+```bash
+# Clone and setup the development environment
+git clone https://github.com/andreidemit/bible_api.git
+cd bible_api
+chmod +x scripts/setup-dev.sh
+./scripts/setup-dev.sh
+```
+
 ```bash
 # Build the Docker image
 docker build -f Dockerfile.dotnet -t bible-api-dotnet:latest .
@@ -107,14 +137,14 @@ curl http://localhost:8000/v1/data/kjv/JHN/3
 curl http://localhost:8000/v1/data/kjv/random/NT
 ```
 
-## Configuration
+### Environment Configuration
 
-The application uses the .NET configuration system. Settings can be provided via:
+Copy the example environment file and customize it:
 
-- `appsettings.json` file
-- Environment variables (prefixed with `AppSettings__`)
-- Command line arguments
-- Azure Key Vault (in production)
+```bash
+cp .env.example .env
+# Edit .env with your Azure Storage credentials
+```
 
 ### Required Settings
 
@@ -128,9 +158,21 @@ The application uses the .NET configuration system. Settings can be provided via
 | Setting | Default | Description |
 |---------|---------|-------------|
 | `Environment` | "development" | Application environment |
+| `BaseUrl` | "http://localhost:8000" | Base URL for API responses |
 | `AllowedOrigins` | ["*"] | CORS allowed origins |
 | `AllowedMethods` | ["GET", "OPTIONS"] | CORS allowed methods |
 | `AllowedHeaders` | ["Content-Type"] | CORS allowed headers |
+
+### Configuration Sources
+
+The application uses the .NET configuration system with the following precedence:
+
+1. Command line arguments (highest priority)
+2. Environment variables (prefixed with `AppSettings__`)
+3. `.env` file (for development)
+4. `appsettings.{Environment}.json`
+5. `appsettings.json` (lowest priority)
+6. Azure Key Vault (in production environments)
 
 ## Development
 
@@ -186,61 +228,173 @@ For development and testing without Azure Storage, the application automatically
 
 ## Deployment
 
-### Docker
+The Bible API supports multiple deployment methods with comprehensive automation scripts and configurations.
 
-The application includes a multi-stage Dockerfile optimized for production:
+### Quick Deployment Options
 
-```dockerfile
-# Build stage uses .NET SDK
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
-# ... build steps ...
+#### 1. Docker (Recommended for Development)
 
-# Runtime stage uses minimal ASP.NET runtime
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
-# ... runtime configuration ...
+```bash
+# Build and run locally
+docker build -t bible-api:latest .
+docker run -p 8000:8000 -e AppSettings__AzureStorageConnectionString="$CONNECTION_STRING" bible-api:latest
+
+# Or use Docker Compose
+cp .env.example .env  # Configure your environment
+docker-compose up -d
 ```
+
+#### 2. Azure Container Instances (Automated Script)
+
+```bash
+# Set required environment variables
+export AZURE_STORAGE_CONNECTION_STRING="your-connection-string"
+export AZURE_CONTAINER_NAME="bible-translations"
+
+# Deploy using the automated script
+./scripts/deploy-azure.sh production bible-api-rg
+```
+
+#### 3. Kubernetes (Automated Script)
+
+```bash
+# Set required environment variables
+export AZURE_STORAGE_CONNECTION_STRING="your-connection-string"
+export DOMAIN="yourdomain.com"
+
+# Deploy using the automated script
+./scripts/deploy-k8s.sh production bible-api latest
+```
+
+### Deployment Scripts
+
+The repository includes comprehensive deployment scripts with proper error handling and logging:
+
+- **`scripts/setup-dev.sh`**: Automated development environment setup
+- **`scripts/deploy-azure.sh`**: Azure Container Instances deployment
+- **`scripts/deploy-k8s.sh`**: Kubernetes deployment with ingress and secrets
+
+All scripts include:
+- Prerequisites checking
+- Environment validation
+- Health check verification
+- Deployment status reporting
+- Error handling and rollback capabilities
+
+### Docker Configuration
+
+#### Multi-Stage Dockerfile Features
+
+- **Optimized layer caching** for faster builds
+- **Security hardening** with non-root user
+- **Multi-architecture support** (linux/amd64, linux/arm64)
+- **Health checks** for container orchestration
+- **Minimal attack surface** using ASP.NET Core runtime image
+
+#### Docker Compose Configurations
+
+- **`docker-compose.yml`**: Production deployment with Traefik proxy
+- **`docker-compose.dev.yml`**: Development with hot reload and debugging
+- **Environment file support** with `.env` configuration
+- **Network isolation** and service discovery
+- **Volume management** for persistent data
 
 ### Azure Container Instances
 
+The automated Azure deployment provides:
+
 ```bash
-# Deploy to Azure Container Instances
+# Example deployment with full configuration
 az container create \
-  --resource-group myResourceGroup \
-  --name bible-api \
-  --image bible-api-dotnet:latest \
-  --environment-variables AppSettings__AzureStorageConnectionString="$CONNECTION_STRING" \
-  --ports 8000
+  --resource-group bible-api-rg \
+  --name bible-api-production \
+  --image bible-api:latest \
+  --cpu 1 --memory 1.5 \
+  --restart-policy Always \
+  --ports 8000 \
+  --ip-address Public \
+  --dns-name-label bible-api-production \
+  --environment-variables \
+    ASPNETCORE_ENVIRONMENT=Production \
+    AppSettings__AzureStorageConnectionString="$CONNECTION_STRING"
 ```
 
-### Kubernetes
+### Kubernetes Deployment
+
+Complete Kubernetes configuration with:
 
 ```yaml
+# Deployment with security context and resource limits
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: bible-api
+  namespace: bible-api
 spec:
   replicas: 3
   selector:
     matchLabels:
       app: bible-api
   template:
-    metadata:
-      labels:
-        app: bible-api
     spec:
       containers:
       - name: bible-api
-        image: bible-api-dotnet:latest
+        image: bible-api:latest
         ports:
         - containerPort: 8000
-        env:
-        - name: AppSettings__AzureStorageConnectionString
-          valueFrom:
-            secretKeyRef:
-              name: bible-api-secrets
-              key: azure-storage-connection-string
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1001
+          allowPrivilegeEscalation: false
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8000
+          initialDelaySeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 8000
+          initialDelaySeconds: 5
 ```
+
+### CI/CD Pipeline
+
+Enhanced GitHub Actions workflow includes:
+
+- **Multi-stage pipeline** with proper job dependencies
+- **Security scanning** with CodeQL and Trivy
+- **Multi-architecture builds** for broader compatibility
+- **Container registry integration** with GHCR
+- **Coverage reporting** with artifact uploads
+- **Automated deployment** on successful builds
+
+### Environment-Specific Configurations
+
+#### Development
+- Mock services for offline development
+- Hot reload with `dotnet watch`
+- Development certificates and debugging support
+- Local database integration (optional)
+
+#### Staging
+- Azure Storage integration
+- Performance monitoring
+- Load testing capabilities
+- Blue-green deployment support
+
+#### Production
+- High availability with load balancing
+- Security hardening and monitoring
+- Automated backups and disaster recovery
+- Performance optimization and caching
 
 ## Technology Stack
 
