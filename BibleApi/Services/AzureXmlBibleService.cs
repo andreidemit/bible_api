@@ -231,6 +231,16 @@ namespace BibleApi.Services
             if (translation == null)
                 return new List<Verse>();
 
+            // Validate input parameters
+            if (chapter <= 0)
+                return new List<Verse>();
+
+            if (verseStart.HasValue && verseStart.Value <= 0)
+                return new List<Verse>();
+
+            if (verseEnd.HasValue && verseEnd.Value <= 0)
+                return new List<Verse>();
+
             // For now, return a simple implementation - in real scenario this would parse XML
             // This is a minimal placeholder to allow the API to work
             var verses = new List<Verse>();

@@ -16,12 +16,23 @@ public class MockAzureXmlBibleService : IAzureXmlBibleService
         new Translation { Identifier = "asv", Name = "American Standard Version", Language = "english", LanguageCode = "en", License = "Public Domain" }
     });
 
-    public Task<Translation?> GetTranslationInfoAsync(string identifier) => Task.FromResult(
+    public Task<Translation?> GetTranslationInfoAsync(string identifier) => Task.FromResult<Translation?>(
         new Translation { Identifier = identifier.ToLower(), Name = identifier.ToLower() == "asv" ? "American Standard Version" : "King James Version", Language = "english", LanguageCode = "en", License = "Public Domain" });
 
     public Task<List<Verse>> GetVersesByReferenceAsync(string translationId, string book, int chapter, int? verseStart = null, int? verseEnd = null)
     {
         var verses = new List<Verse>();
+        
+        // Validate input parameters
+        if (chapter <= 0)
+            return Task.FromResult(verses);
+
+        if (verseStart.HasValue && verseStart.Value <= 0)
+            return Task.FromResult(verses);
+
+        if (verseEnd.HasValue && verseEnd.Value <= 0)
+            return Task.FromResult(verses);
+
         var normalized = BookMetadata.Normalize(book);
         var name = BookMetadata.GetName(normalized);
         int start = verseStart ?? 1;
