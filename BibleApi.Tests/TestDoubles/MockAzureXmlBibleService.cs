@@ -1,6 +1,6 @@
-using BibleApi.Models;
+using BibleApi.Core.Models;
+using BibleApi.Core.Utilities;
 using BibleApi.Services;
-using BibleApi.Core;
 
 namespace BibleApi.Tests.TestDoubles;
 
@@ -16,7 +16,7 @@ public class MockAzureXmlBibleService : IAzureXmlBibleService
         new Translation { Identifier = "asv", Name = "American Standard Version", Language = "english", LanguageCode = "en", License = "Public Domain" }
     });
 
-    public Task<Translation?> GetTranslationInfoAsync(string identifier) => Task.FromResult(
+    public Task<Translation?> GetTranslationInfoAsync(string identifier) => Task.FromResult<Translation?>(
         new Translation { Identifier = identifier.ToLower(), Name = identifier.ToLower() == "asv" ? "American Standard Version" : "King James Version", Language = "english", LanguageCode = "en", License = "Public Domain" });
 
     public Task<List<Verse>> GetVersesByReferenceAsync(string translationId, string book, int chapter, int? verseStart = null, int? verseEnd = null)

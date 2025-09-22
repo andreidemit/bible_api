@@ -96,4 +96,71 @@ namespace BibleApi.Core.Models
         [Required]
         public List<BookChapter> Chapters { get; set; } = new();
     }
+
+    /// <summary>
+    /// Response model for verses in a chapter
+    /// </summary>
+    public class VersesInChapterResponse
+    {
+        [Required]
+        public Translation Translation { get; set; } = new();
+        
+        [Required]
+        public List<Verse> Verses { get; set; } = new();
+    }
+
+    /// <summary>
+    /// Response model for random verse queries
+    /// </summary>
+    public class RandomVerseResponse
+    {
+        [Required]
+        public Translation Translation { get; set; } = new();
+        
+        [Required]
+        public Verse RandomVerse { get; set; } = new();
+    }
+
+    /// <summary>
+    /// Response model for translation listings
+    /// </summary>
+    public class TranslationsResponse
+    {
+        [Required]
+        public List<TranslationWithUrl> Translations { get; set; } = new();
+    }
+
+    /// <summary>
+    /// Translation with URL for API navigation
+    /// </summary>
+    public class TranslationWithUrl : Translation
+    {
+        public string? Url { get; set; }
+    }
+
+    /// <summary>
+    /// Response model for book listings
+    /// </summary>
+    public class BooksResponse
+    {
+        [Required]
+        public Translation Translation { get; set; } = new();
+        
+        [Required]
+        public List<BookWithUrl> Books { get; set; } = new();
+    }
+
+    /// <summary>
+    /// Book with URL for API navigation
+    /// </summary>
+    public class BookWithUrl
+    {
+        [Required]
+        public string Id { get; set; } = string.Empty;
+        
+        [Required]
+        public string Name { get; set; } = string.Empty;
+        
+        public string? Url { get; set; }
+    }
 }

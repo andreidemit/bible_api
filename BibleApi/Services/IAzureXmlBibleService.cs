@@ -1,4 +1,4 @@
-using BibleApi.Models;
+using BibleApi.Core.Models;
 
 namespace BibleApi.Services
 {

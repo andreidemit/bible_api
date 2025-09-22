@@ -1,7 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
-using BibleApi.Models;
+using BibleApi.Core.Models;
+using BibleApi.Core.Utilities;
+using BibleApi.Core.Constants;
 using BibleApi.Services;
-using BibleApi.Core;
 using Microsoft.AspNetCore.Cors;
 
 namespace BibleApi.Controllers

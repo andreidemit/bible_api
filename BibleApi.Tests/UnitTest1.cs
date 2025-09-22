@@ -1,6 +1,5 @@
 using Xunit;
-using BibleApi.Core;
-using BibleApi.Models;
+using BibleApi.Core.Constants;
 using BibleApi.Services;
 using BibleApi.Tests.TestDoubles;
 
