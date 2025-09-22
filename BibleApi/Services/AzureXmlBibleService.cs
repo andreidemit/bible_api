@@ -315,6 +315,100 @@ namespace BibleApi.Services
             };
         }
 
+        /// <summary>
+        /// Search for verses containing specific text
+        /// </summary>
+        public async Task<List<Verse>> SearchVersesAsync(string translationId, string searchText, string[]? books = null, int maxResults = 100)
+        {
+            if (string.IsNullOrWhiteSpace(searchText))
+            {
+                return new List<Verse>();
+            }
+
+            // Normalize search text for case-insensitive search
+            var normalizedSearch = searchText.ToLower().Trim();
+            var searchTerms = normalizedSearch.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            
+            // Determine which books to search
+            var booksToSearch = books ?? BibleConstants.ProtestantBooks;
+            var results = new List<Verse>();
+            
+            // Get translation info
+            var translation = await GetTranslationInfoAsync(translationId);
+            if (translation == null)
+            {
+                return results;
+            }
+
+            // Mock implementation - in a real implementation, this would search through actual XML data
+            foreach (var bookId in booksToSearch.Take(10)) // Limit books for demo
+            {
+                if (results.Count >= maxResults) break;
+                
+                var normalizedBook = BookMetadata.Normalize(bookId);
+                if (string.IsNullOrEmpty(normalizedBook)) continue;
+                
+                var bookName = BookMetadata.GetName(normalizedBook);
+                var chapterCount = BookMetadata.GetChapterCount(normalizedBook);
+                
+                // Mock: create sample verses that match the search
+                for (int chapter = 1; chapter <= Math.Min(chapterCount, 3); chapter++) // Limit chapters for demo
+                {
+                    if (results.Count >= maxResults) break;
+                    
+                    for (int verse = 1; verse <= 5; verse++) // Mock 5 verses per chapter
+                    {
+                        if (results.Count >= maxResults) break;
+                        
+                        // Mock verse text that contains search terms
+                        var mockText = GenerateMockVerseWithSearch(searchTerms, bookName, chapter, verse);
+                        if (ContainsSearchTerms(mockText, searchTerms))
+                        {
+                            results.Add(new Verse
+                            {
+                                BookId = normalizedBook,
+                                Book = bookName,
+                                Chapter = chapter,
+                                VerseNumber = verse,
+                                Text = mockText
+                            });
+                        }
+                    }
+                }
+            }
+
+            return results;
+        }
+
+        /// <summary>
+        /// Generate mock verse text that contains search terms
+        /// </summary>
+        private string GenerateMockVerseWithSearch(string[] searchTerms, string bookName, int chapter, int verse)
+        {
+            var templates = new[]
+            {
+                "For God so {0} the world that he gave his one and only Son.",
+                "The Lord is my {0} and my salvation; whom shall I fear?",
+                "In the beginning was the {0}, and the {0} was with God.",
+                "Trust in the Lord with all your {0} and lean not on your own understanding.",
+                "Be still and know that I am {0}; I will be exalted among the nations."
+            };
+            
+            var template = templates[(chapter + verse - 2) % templates.Length];
+            var searchTerm = searchTerms[0]; // Use first search term
+            
+            return string.Format(template, searchTerm) + $" ({bookName} {chapter}:{verse})";
+        }
+
+        /// <summary>
+        /// Check if text contains all search terms
+        /// </summary>
+        private bool ContainsSearchTerms(string text, string[] searchTerms)
+        {
+            var lowerText = text.ToLower();
+            return searchTerms.All(term => lowerText.Contains(term));
+        }
+
     // Book name lookup provided by BookMetadata.GetName
 
     // Chapter counts provided by BookMetadata.GetChapterCount

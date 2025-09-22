@@ -64,4 +64,39 @@ public class MockAzureXmlBibleService : IAzureXmlBibleService
         var verse = 1;
         return Task.FromResult<Verse?>(new Verse { BookId = code, Book = name, Chapter = chapter, VerseNumber = verse, Text = $"Random {name} 1:1" });
     }
+
+    public Task<List<Verse>> SearchVersesAsync(string translationId, string searchText, string[]? books = null, int maxResults = 100)
+    {
+        var results = new List<Verse>();
+        var booksToSearch = books ?? new[] { "GEN", "JHN", "PSA" }; // Mock a few books
+        
+        foreach (var bookId in booksToSearch.Take(3)) // Limit for mock
+        {
+            if (results.Count >= maxResults) break;
+            
+            var normalized = BookMetadata.Normalize(bookId);
+            var name = BookMetadata.GetName(normalized);
+            
+            for (int chapter = 1; chapter <= 2; chapter++) // Mock 2 chapters
+            {
+                if (results.Count >= maxResults) break;
+                
+                for (int verse = 1; verse <= 3; verse++) // Mock 3 verses per chapter
+                {
+                    if (results.Count >= maxResults) break;
+                    
+                    results.Add(new Verse
+                    {
+                        BookId = normalized,
+                        Book = name,
+                        Chapter = chapter,
+                        VerseNumber = verse,
+                        Text = $"Mock verse containing '{searchText}' from {name} {chapter}:{verse} ({translationId})"
+                    });
+                }
+            }
+        }
+        
+        return Task.FromResult(results);
+    }
 }

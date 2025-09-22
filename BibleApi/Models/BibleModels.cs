@@ -163,4 +163,59 @@ namespace BibleApi.Models
         
         public string? Url { get; set; }
     }
+
+    /// <summary>
+    /// Response model for search queries
+    /// </summary>
+    public class SearchResponse
+    {
+        [Required]
+        public Translation Translation { get; set; } = new();
+        
+        [Required]
+        public List<Verse> Results { get; set; } = new();
+        
+        [Required]
+        public string Query { get; set; } = string.Empty;
+        
+        [Required]
+        public int TotalResults { get; set; }
+        
+        [Required]
+        public int ReturnedResults { get; set; }
+        
+        public string[]? BooksSearched { get; set; }
+    }
+
+    /// <summary>
+    /// Verse with highlighted search terms
+    /// </summary>
+    public class VerseWithHighlight : Verse
+    {
+        public string? HighlightedText { get; set; }
+    }
+
+    /// <summary>
+    /// Response model for paginated results
+    /// </summary>
+    public class PaginatedResponse<T>
+    {
+        [Required]
+        public List<T> Items { get; set; } = new();
+        
+        [Required]
+        public int Page { get; set; }
+        
+        [Required]
+        public int PageSize { get; set; }
+        
+        [Required]
+        public int TotalCount { get; set; }
+        
+        [Required]
+        public int TotalPages { get; set; }
+        
+        public bool HasNext => Page < TotalPages;
+        public bool HasPrevious => Page > 1;
+    }
 }

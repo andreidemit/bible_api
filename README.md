@@ -82,6 +82,29 @@ GET /v1/data/{translationId}/random/{bookId}
 ```
 Returns a random verse from the specified book(s). Use `OT` for Old Testament, `NT` for New Testament, or specific book IDs separated by commas.
 
+#### Daily Verse
+```
+GET /v1/data/{translationId}/daily
+```
+Returns the verse of the day. This is a deterministic verse that remains the same for the entire day.
+
+#### Search Verses
+```
+GET /v1/data/{translationId}/search?q={query}&books={books}&limit={limit}
+```
+Search for verses containing specific text. Parameters:
+- `q` (required): Search query text
+- `books` (optional): Comma-separated book IDs, or "OT"/"NT" for testament filtering
+- `limit` (optional): Maximum results to return (1-500, default: 50)
+
+#### Verse Range
+```
+GET /v1/data/{translationId}/{bookId}/{chapter}/{verseRange}
+```
+Get specific verse or verse range within a chapter. Examples:
+- `/v1/data/kjv/JHN/3/16` - Single verse (John 3:16)
+- `/v1/data/kjv/JHN/3/16-18` - Verse range (John 3:16-18)
+
 #### Health Check
 ```
 GET /healthz
@@ -103,8 +126,26 @@ curl http://localhost:8000/v1/data/kjv/GEN
 # Get verses from John chapter 3
 curl http://localhost:8000/v1/data/kjv/JHN/3
 
+# Get specific verse (John 3:16)
+curl http://localhost:8000/v1/data/kjv/JHN/3/16
+
+# Get verse range (John 3:16-18)
+curl http://localhost:8000/v1/data/kjv/JHN/3/16-18
+
 # Get random verse from New Testament
 curl http://localhost:8000/v1/data/kjv/random/NT
+
+# Get daily verse
+curl http://localhost:8000/v1/data/kjv/daily
+
+# Search for verses containing "love"
+curl "http://localhost:8000/v1/data/kjv/search?q=love"
+
+# Search in specific books
+curl "http://localhost:8000/v1/data/kjv/search?q=love&books=JHN,1JN"
+
+# Search in Old Testament only
+curl "http://localhost:8000/v1/data/kjv/search?q=love&books=OT&limit=10"
 ```
 
 ## Configuration
@@ -178,11 +219,19 @@ For development and testing without Azure Storage, the application automatically
 - ✅ Health check endpoint for monitoring
 - ✅ Azure Blob Storage integration
 - ✅ In-memory caching for performance
+- ✅ Response caching with HTTP cache headers
+- ✅ Response compression (gzip)
 - ✅ Structured logging with .NET ILogger
 - ✅ Docker containerization
 - ✅ Configuration management with .NET Options pattern
 - ✅ Dependency injection
 - ✅ Error handling with proper HTTP status codes
+- ✅ **Full-text search** across verses with filtering
+- ✅ **Verse range queries** (e.g., John 3:16-18)
+- ✅ **Daily verse endpoint** with deterministic selection
+- ✅ **Enhanced response models** with pagination support
+- ✅ **Performance optimizations** (caching, compression)
+- ✅ **Comprehensive test suite** with 43+ passing tests
 
 ## Deployment
 

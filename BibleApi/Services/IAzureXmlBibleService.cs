@@ -31,5 +31,10 @@ namespace BibleApi.Services
         /// Get a random verse from specified books
         /// </summary>
         Task<Verse?> GetRandomVerseAsync(string translationId, string[] books);
+
+        /// <summary>
+        /// Search for verses containing specific text
+        /// </summary>
+        Task<List<Verse>> SearchVersesAsync(string translationId, string searchText, string[]? books = null, int maxResults = 100);
     }
 }
