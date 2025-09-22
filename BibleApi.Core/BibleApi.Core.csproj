@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageId>BibleApi.Core</PackageId>
+    <PackageVersion>1.0.0</PackageVersion>
+    <Authors>Bible API Team</Authors>
+    <Description>Shared library for Bible API functionality containing models, constants, utilities, and interfaces for Bible data processing.</Description>
+    <PackageTags>bible;api;shared;library;xml;parsing</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0" />
+  </ItemGroup>
+
+</Project>

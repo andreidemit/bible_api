@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace BibleImporter.Models
+namespace BibleApi.Core.Models
 {
     /// <summary>
     /// Database model for Translation table matching SQL schema

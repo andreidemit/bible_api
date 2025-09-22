@@ -1,5 +1,5 @@
 using Microsoft.Data.SqlClient;
-using BibleImporter.Models;
+using BibleApi.Core.Models;
 using BibleImporter.Configuration;
 using Microsoft.Extensions.Logging;
 using System.Data;

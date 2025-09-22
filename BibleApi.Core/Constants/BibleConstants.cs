@@ -1,4 +1,4 @@
-namespace BibleApi.Core
+namespace BibleApi.Core.Constants
 {
     /// <summary>
     /// Canonical book lists and derived subsets (equivalent to Python constants.py)

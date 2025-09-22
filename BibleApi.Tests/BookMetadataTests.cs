@@ -1,4 +1,4 @@
-using BibleApi.Core;
+using BibleApi.Core.Utilities;
 using Xunit;
 
 namespace BibleApi.Tests

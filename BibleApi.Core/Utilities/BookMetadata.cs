@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
+using BibleApi.Core.Constants;
 
-namespace BibleApi.Core
+namespace BibleApi.Core.Utilities
 {
     /// <summary>
     /// Centralized metadata for Bible book names, chapter counts, and normalization utilities.

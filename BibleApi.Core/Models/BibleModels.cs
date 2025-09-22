@@ -1,9 +1,9 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace BibleApi.Models
+namespace BibleApi.Core.Models
 {
     /// <summary>
-    /// Represents a Bible translation (equivalent to Python Translation schema)
+    /// Represents a Bible translation
     /// </summary>
     public class Translation
     {
@@ -24,7 +24,7 @@ namespace BibleApi.Models
     }
 
     /// <summary>
-    /// Represents a single Bible verse (equivalent to Python Verse schema)
+    /// Represents a single Bible verse
     /// </summary>
     public class Verse
     {
@@ -45,7 +45,24 @@ namespace BibleApi.Models
     }
 
     /// <summary>
-    /// Response model for verse queries (equivalent to Python VerseResponse schema)
+    /// Represents a book chapter reference
+    /// </summary>
+    public class BookChapter
+    {
+        [Required]
+        public string BookId { get; set; } = string.Empty;
+        
+        [Required]
+        public string Book { get; set; } = string.Empty;
+        
+        [Required]
+        public int Chapter { get; set; }
+        
+        public string? Url { get; set; }
+    }
+
+    /// <summary>
+    /// Response model for verse queries
     /// </summary>
     public class VerseResponse
     {
@@ -69,24 +86,7 @@ namespace BibleApi.Models
     }
 
     /// <summary>
-    /// Represents a book chapter reference (equivalent to Python BookChapter schema)
-    /// </summary>
-    public class BookChapter
-    {
-        [Required]
-        public string BookId { get; set; } = string.Empty;
-        
-        [Required]
-        public string Book { get; set; } = string.Empty;
-        
-        [Required]
-        public int Chapter { get; set; }
-        
-        public string? Url { get; set; }
-    }
-
-    /// <summary>
-    /// Response model for chapters queries (equivalent to Python ChaptersResponse schema)
+    /// Response model for chapters queries
     /// </summary>
     public class ChaptersResponse
     {
@@ -98,7 +98,7 @@ namespace BibleApi.Models
     }
 
     /// <summary>
-    /// Response model for verses in a chapter (equivalent to Python VersesInChapterResponse schema)
+    /// Response model for verses in a chapter
     /// </summary>
     public class VersesInChapterResponse
     {
@@ -110,7 +110,7 @@ namespace BibleApi.Models
     }
 
     /// <summary>
-    /// Response model for random verse queries (equivalent to Python RandomVerseResponse schema)
+    /// Response model for random verse queries
     /// </summary>
     public class RandomVerseResponse
     {

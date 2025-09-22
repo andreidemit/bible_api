@@ -1,7 +1,9 @@
 using System.Xml.Linq;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
-using BibleApi.Core;
+using BibleApi.Core.Utilities;
+using BibleApi.Core.Models;
+using BibleApi.Core.Constants;
 using System.Text;
 
 namespace BibleImporter.Services

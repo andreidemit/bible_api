@@ -1,11 +1,11 @@
 using BibleApi.Core.Models;
 
-namespace BibleApi.Services
+namespace BibleApi.Core.Interfaces
 {
     /// <summary>
-    /// Interface for Azure XML Bible Service
+    /// Interface for Bible data services that read from various sources (XML, database, etc.)
     /// </summary>
-    public interface IAzureXmlBibleService
+    public interface IBibleService
     {
         /// <summary>
         /// List all available Bible translations
@@ -31,5 +31,21 @@ namespace BibleApi.Services
         /// Get a random verse from specified books
         /// </summary>
         Task<Verse?> GetRandomVerseAsync(string translationId, string[] books);
+    }
+
+    /// <summary>
+    /// Interface for XML-based Bible services
+    /// </summary>
+    public interface IXmlBibleService : IBibleService
+    {
+        // Specific methods for XML-based services can be added here
+    }
+
+    /// <summary>
+    /// Interface for database-based Bible services
+    /// </summary>
+    public interface IDatabaseBibleService : IBibleService
+    {
+        // Specific methods for database-based services can be added here
     }
 }

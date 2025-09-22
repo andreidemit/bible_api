@@ -2,9 +2,9 @@ using Azure.Storage.Blobs;
 using Azure.Core;
 using System.Xml.Linq;
 using System.Text.RegularExpressions;
-using BibleApi.Models;
+using BibleApi.Core.Models;
+using BibleApi.Core.Utilities;
 using BibleApi.Configuration;
-using BibleApi.Core;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Logging;
 
