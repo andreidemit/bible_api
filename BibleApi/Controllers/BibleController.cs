@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using BibleApi.Models;
 using BibleApi.Services;
 using BibleApi.Core;
+using BibleApi.Validation;
 using Microsoft.AspNetCore.Cors;
 
 namespace BibleApi.Controllers
@@ -22,6 +23,19 @@ namespace BibleApi.Controllers
         {
             _azureService = azureService;
             _logger = logger;
+        }
+
+        /// <summary>
+        /// Handle validation exceptions and return appropriate error responses
+        /// </summary>
+        private ActionResult HandleValidationException(BibleValidationException ex)
+        {
+            _logger.LogWarning(ex, "Validation error for parameter {Parameter}: {Message}", ex.Parameter, ex.Message);
+            return BadRequest(new { 
+                error = "Validation failed", 
+                parameter = ex.Parameter,
+                message = ex.Message 
+            });
         }
 
         /// <summary>
@@ -128,6 +142,7 @@ namespace BibleApi.Controllers
         /// </summary>
         [HttpGet("data/{translationId}/{bookId}")]
         [ProducesResponseType(typeof(ChaptersResponse), 200)]
+        [ProducesResponseType(400)]
         [ProducesResponseType(404)]
         public async Task<ActionResult<ChaptersResponse>> GetBookChapters(string translationId, string bookId)
         {
@@ -154,6 +169,10 @@ namespace BibleApi.Controllers
                     Chapters = chapters 
                 });
             }
+            catch (BibleValidationException ex)
+            {
+                return HandleValidationException(ex);
+            }
             catch (KeyNotFoundException)
             {
                 return NotFound(new { error = "translation not found" });
@@ -171,6 +190,7 @@ namespace BibleApi.Controllers
         /// </summary>
         [HttpGet("data/{translationId}/{bookId}/{chapter:int}")]
         [ProducesResponseType(typeof(VersesInChapterResponse), 200)]
+        [ProducesResponseType(400)]
         [ProducesResponseType(404)]
         public async Task<ActionResult<VersesInChapterResponse>> GetChapterVerses(string translationId, string bookId, int chapter)
         {
@@ -190,6 +210,10 @@ namespace BibleApi.Controllers
                     Verses = verses 
                 });
             }
+            catch (BibleValidationException ex)
+            {
+                return HandleValidationException(ex);
+            }
             catch (KeyNotFoundException)
             {
                 return NotFound(new { error = "translation not found" });
@@ -207,6 +231,7 @@ namespace BibleApi.Controllers
         /// </summary>
         [HttpGet("data/{translationId}/random/{bookId}")]
         [ProducesResponseType(typeof(RandomVerseResponse), 200)]
+        [ProducesResponseType(400)]
         [ProducesResponseType(404)]
         public async Task<ActionResult<RandomVerseResponse>> GetRandomVerseByBook(string translationId, string bookId)
         {
@@ -241,6 +266,10 @@ namespace BibleApi.Controllers
                     Translation = translation, 
                     RandomVerse = randomVerse 
                 });
+            }
+            catch (BibleValidationException ex)
+            {
+                return HandleValidationException(ex);
             }
             catch (KeyNotFoundException)
             {

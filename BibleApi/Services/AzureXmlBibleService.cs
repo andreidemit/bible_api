@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using BibleApi.Models;
 using BibleApi.Configuration;
 using BibleApi.Core;
+using BibleApi.Validation;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Logging;
 
@@ -227,15 +228,22 @@ namespace BibleApi.Services
         /// </summary>
         public async Task<List<Verse>> GetVersesByReferenceAsync(string translationId, string book, int chapter, int? verseStart = null, int? verseEnd = null)
         {
+            // Validate inputs
+            BibleValidationHelper.ValidateTranslationId(translationId);
+            var normalizedBook = BibleValidationHelper.ValidateAndNormalizeBookId(book);
+            BibleValidationHelper.ValidateChapter(normalizedBook, chapter);
+            BibleValidationHelper.ValidateVerseRange(verseStart, verseEnd);
+
             var translation = await GetTranslationInfoAsync(translationId);
             if (translation == null)
-                return new List<Verse>();
+            {
+                throw new BibleValidationException("translationId", $"Translation '{translationId}' not found.");
+            }
 
             // For now, return a simple implementation - in real scenario this would parse XML
             // This is a minimal placeholder to allow the API to work
             var verses = new List<Verse>();
             
-            var normalizedBook = BookMetadata.Normalize(book);
             var bookName = BookMetadata.GetName(normalizedBook);
             
             // Create some sample verses for demonstration
@@ -262,12 +270,17 @@ namespace BibleApi.Services
         /// </summary>
         public async Task<List<BookChapter>> GetChaptersForBookAsync(string translationId, string bookId)
         {
+            // Validate inputs
+            BibleValidationHelper.ValidateTranslationId(translationId);
+            var normalizedBook = BibleValidationHelper.ValidateAndNormalizeBookId(bookId);
+
             var translation = await GetTranslationInfoAsync(translationId);
             if (translation == null)
-                return new List<BookChapter>();
+            {
+                throw new BibleValidationException("translationId", $"Translation '{translationId}' not found.");
+            }
 
             // For now, return a simple implementation
-            var normalizedBook = BookMetadata.Normalize(bookId);
             var bookName = BookMetadata.GetName(normalizedBook);
             var chapters = new List<BookChapter>();
             
@@ -292,22 +305,27 @@ namespace BibleApi.Services
         /// </summary>
         public async Task<Verse?> GetRandomVerseAsync(string translationId, string[] books)
         {
+            // Validate inputs
+            BibleValidationHelper.ValidateTranslationId(translationId);
+            var normalizedBooks = BibleValidationHelper.ValidateAndNormalizeBookIds(books);
+
             var translation = await GetTranslationInfoAsync(translationId);
-            if (translation == null || !books.Any())
-                return null;
+            if (translation == null)
+            {
+                throw new BibleValidationException("translationId", $"Translation '{translationId}' not found.");
+            }
 
             // Simple random implementation
             var random = new Random();
-            var randomBook = books[random.Next(books.Length)];
-            var normalizedBook = BookMetadata.Normalize(randomBook);
-            var bookName = BookMetadata.GetName(normalizedBook);
+            var randomBook = normalizedBooks[random.Next(normalizedBooks.Length)];
+            var bookName = BookMetadata.GetName(randomBook);
             
-            var randomChapter = random.Next(1, BookMetadata.GetChapterCount(normalizedBook) + 1);
+            var randomChapter = random.Next(1, BookMetadata.GetChapterCount(randomBook) + 1);
             var randomVerse = random.Next(1, 32); // Most chapters don't exceed 31 verses
             
             return new Verse
             {
-                BookId = normalizedBook,
+                BookId = randomBook,
                 Book = bookName,
                 Chapter = randomChapter,
                 VerseNumber = randomVerse,

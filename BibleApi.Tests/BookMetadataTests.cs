@@ -28,6 +28,35 @@ namespace BibleApi.Tests
         }
 
         [Theory]
+        [InlineData("", "")]
+        [InlineData(" ", "")]
+        [InlineData("   ", "")]
+        [InlineData(null, "")]
+        public void Normalize_EmptyOrWhitespace_ReturnsEmpty(string input, string expected)
+        {
+            var actual = BookMetadata.Normalize(input);
+            Assert.Equal(expected, actual);
+        }
+
+        [Fact]
+        public void Normalize_VeryLongInput_Truncates()
+        {
+            var longInput = new string('A', 150); // 150 characters
+            var actual = BookMetadata.Normalize(longInput);
+            Assert.True(actual.Length <= 100);
+        }
+
+        [Theory]
+        [InlineData("!@#$%", "!@#$%")] // Returns original when no letters/numbers
+        [InlineData("___", "___")] // Returns original when no letters/numbers
+        [InlineData("123", "123")] // Numbers are preserved
+        public void Normalize_SpecialCharacters_HandledCorrectly(string input, string expected)
+        {
+            var actual = BookMetadata.Normalize(input);
+            Assert.Equal(expected, actual);
+        }
+
+        [Theory]
         [InlineData("GEN", "Genesis")]
         [InlineData("REV", "Revelation")]
         [InlineData("PHP", "Philippians")]
@@ -40,6 +69,15 @@ namespace BibleApi.Tests
         public void GetName_Unknown_EchoesCode()
         {
             Assert.Equal("XYZ", BookMetadata.GetName("XYZ"));
+        }
+
+        [Theory]
+        [InlineData("")]
+        [InlineData(" ")]
+        [InlineData(null)]
+        public void GetName_EmptyOrWhitespace_ReturnsEmpty(string code)
+        {
+            Assert.Equal("", BookMetadata.GetName(code));
         }
 
         [Theory]
@@ -57,6 +95,15 @@ namespace BibleApi.Tests
         {
             // Implementation currently falls back to 1 if not found
             Assert.Equal(1, BookMetadata.GetChapterCount("XYZ"));
+        }
+
+        [Theory]
+        [InlineData("")]
+        [InlineData(" ")]
+        [InlineData(null)]
+        public void GetChapterCount_EmptyOrWhitespace_ReturnsFallback(string code)
+        {
+            Assert.Equal(1, BookMetadata.GetChapterCount(code));
         }
 
         [Theory]
