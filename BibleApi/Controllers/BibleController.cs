@@ -176,6 +176,12 @@ namespace BibleApi.Controllers
         {
             try
             {
+                // Validate input parameters
+                if (chapter <= 0)
+                {
+                    return BadRequest(new { error = "Chapter number must be greater than 0" });
+                }
+
                 var translation = await GetTranslationAsync(translationId);
                 var verses = await _azureService.GetVersesByReferenceAsync(translationId, bookId, chapter);
 
