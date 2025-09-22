@@ -8,7 +8,17 @@ builder.Services.Configure<AppSettings>(builder.Configuration.GetSection("AppSet
 
 // Add services to the container
 builder.Services.AddControllers();
-builder.Services.AddScoped<IAzureXmlBibleService, AzureXmlBibleService>();
+
+// Register Bible service based on configuration availability
+var appSettings = builder.Configuration.GetSection("AppSettings").Get<AppSettings>();
+if (string.IsNullOrEmpty(appSettings?.AzureStorageConnectionString) && builder.Environment.IsDevelopment())
+{
+    builder.Services.AddScoped<IAzureXmlBibleService, MockAzureXmlBibleService>();
+}
+else
+{
+    builder.Services.AddScoped<IAzureXmlBibleService, AzureXmlBibleService>();
+}
 
 // Add CORS
 builder.Services.AddCors(options =>

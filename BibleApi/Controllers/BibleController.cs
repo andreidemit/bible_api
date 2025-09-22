@@ -172,12 +172,45 @@ namespace BibleApi.Controllers
         [HttpGet("data/{translationId}/{bookId}/{chapter:int}")]
         [ProducesResponseType(typeof(VersesInChapterResponse), 200)]
         [ProducesResponseType(404)]
-        public async Task<ActionResult<VersesInChapterResponse>> GetChapterVerses(string translationId, string bookId, int chapter)
+        public async Task<ActionResult<VersesInChapterResponse>> GetChapterVerses(
+            string translationId, 
+            string bookId, 
+            int chapter,
+            [FromQuery] int? verse_start = null,
+            [FromQuery] int? verse_end = null)
         {
             try
             {
+                // Input validation
+                if (chapter <= 0)
+                {
+                    return BadRequest(new { error = "Chapter must be greater than 0" });
+                }
+
+                if (verse_start.HasValue && verse_start.Value <= 0)
+                {
+                    return BadRequest(new { error = "verse_start must be greater than 0" });
+                }
+
+                if (verse_end.HasValue && verse_end.Value <= 0)
+                {
+                    return BadRequest(new { error = "verse_end must be greater than 0" });
+                }
+
+                if (verse_start.HasValue && verse_end.HasValue && verse_start.Value > verse_end.Value)
+                {
+                    return BadRequest(new { error = "verse_start must be less than or equal to verse_end" });
+                }
+
+                // Validate book ID
+                var normalizedBook = BookMetadata.Normalize(bookId);
+                if (!BookMetadata.IsValid(normalizedBook))
+                {
+                    return NotFound(new { error = "Invalid book identifier" });
+                }
+
                 var translation = await GetTranslationAsync(translationId);
-                var verses = await _azureService.GetVersesByReferenceAsync(translationId, bookId, chapter);
+                var verses = await _azureService.GetVersesByReferenceAsync(translationId, bookId, chapter, verse_start, verse_end);
 
                 if (!verses.Any())
                 {
