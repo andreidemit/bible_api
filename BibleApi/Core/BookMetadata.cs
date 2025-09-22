@@ -60,11 +60,29 @@ namespace BibleApi.Core
         /// </summary>
         public static string Normalize(string input)
         {
-            if (string.IsNullOrWhiteSpace(input)) return input.Trim().ToUpper();
+            if (string.IsNullOrWhiteSpace(input)) 
+            {
+                return string.Empty;
+            }
+            
             var raw = input.Trim().ToUpper();
+            
+            // Handle extremely long input (potential attack/mistake)
+            if (raw.Length > 100)
+            {
+                raw = raw.Substring(0, 100);
+            }
+            
             if (_bookNames.ContainsKey(raw)) return raw; // already a code
 
             var condensed = Regex.Replace(raw, "[^A-Z0-9]", "");
+            
+            // Handle empty string after cleaning
+            if (string.IsNullOrEmpty(condensed))
+            {
+                return input.Trim().ToUpper();
+            }
+            
             if (_nameToCode.TryGetValue(condensed, out var code)) return code;
 
             // Handle numbers at start like 1SAMUEL / 2KINGS already condensed
@@ -81,13 +99,18 @@ namespace BibleApi.Core
 
         public static string GetName(string code)
         {
-            if (string.IsNullOrWhiteSpace(code)) return code;
-            return _bookNames.TryGetValue(code.ToUpper(), out var name) ? name : code.ToUpper();
+            if (string.IsNullOrWhiteSpace(code)) return string.Empty;
+            
+            var normalized = code.Trim().ToUpper();
+            return _bookNames.TryGetValue(normalized, out var name) ? name : normalized;
         }
 
         public static int GetChapterCount(string code)
         {
-            return _chapterCounts.TryGetValue(code.ToUpper(), out var count) ? count : 1; // lean fallback
+            if (string.IsNullOrWhiteSpace(code)) return 1; // lean fallback
+            
+            var normalized = code.Trim().ToUpper();
+            return _chapterCounts.TryGetValue(normalized, out var count) ? count : 1;
         }
 
         public static bool IsValid(string code) => BibleConstants.IsValidBookId(code);
